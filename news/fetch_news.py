@@ -1,3 +1,4 @@
+import argparse
 import json
 import sqlite3
 import sys
@@ -68,11 +69,16 @@ def fetch_channel(channel):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--hours", type=float, default=None, help="Override config's window_hours")
+    args = parser.parse_args()
+
     config = load_config()
     conn = init_db()
     now_dt = datetime.now(timezone.utc)
     now = now_dt.isoformat()
-    cutoff = now_dt - timedelta(hours=config.get("window_hours", 48))
+    window_hours = args.hours if args.hours is not None else config.get("window_hours", 48)
+    cutoff = now_dt - timedelta(hours=window_hours)
 
     new_items = []
     for channel in config["channels"]:
