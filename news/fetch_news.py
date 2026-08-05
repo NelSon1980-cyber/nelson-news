@@ -1,6 +1,5 @@
 import argparse
 import json
-import sqlite3
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -11,7 +10,7 @@ from bs4 import BeautifulSoup
 
 BASE_DIR = Path(__file__).parent
 CONFIG_PATH = BASE_DIR / "config.json"
-DB_PATH = BASE_DIR / "data" / "news.db"
+SEEN_PATH = BASE_DIR / "data" / "seen_posts.json"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
 
@@ -20,20 +19,18 @@ def load_config():
         return json.load(f)
 
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS seen_posts (
-            channel TEXT NOT NULL,
-            post_id INTEGER NOT NULL,
-            fetched_at TEXT NOT NULL,
-            PRIMARY KEY (channel, post_id)
-        )
-        """
-    )
-    conn.commit()
-    return conn
+def load_seen():
+    if not SEEN_PATH.exists():
+        return {}
+    with open(SEEN_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_seen(seen):
+    SEEN_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(SEEN_PATH, "w", encoding="utf-8") as f:
+        json.dump(seen, f, ensure_ascii=False, indent=2, sort_keys=True)
+        f.write("\n")
 
 
 def fetch_channel(channel):
@@ -74,7 +71,7 @@ def main():
     args = parser.parse_args()
 
     config = load_config()
-    conn = init_db()
+    seen = load_seen()
     now_dt = datetime.now(timezone.utc)
     now = now_dt.isoformat()
     window_hours = args.hours if args.hours is not None else config.get("window_hours", 48)
@@ -92,20 +89,14 @@ def main():
             if not post["date"] or datetime.fromisoformat(post["date"]) < cutoff:
                 continue
 
-            row = conn.execute(
-                "SELECT 1 FROM seen_posts WHERE channel = ? AND post_id = ?",
-                (post["channel"], post["post_id"]),
-            ).fetchone()
-            if row is None and post["text"]:
+            key = f"{post['channel']}:{post['post_id']}"
+            if key not in seen and post["text"]:
                 new_items.append(post)
-                conn.execute(
-                    "INSERT INTO seen_posts (channel, post_id, fetched_at) VALUES (?, ?, ?)",
-                    (post["channel"], post["post_id"], now),
-                )
+                seen[key] = now
 
-        conn.commit()
         time.sleep(1)
 
+    save_seen(seen)
     new_items.sort(key=lambda p: p["date"] or "")
     print(json.dumps(new_items, ensure_ascii=False, indent=2))
 
