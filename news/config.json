@@ -1,0 +1,25 @@
+{
+  "timezone": "Asia/Dubai",
+  "schedule": ["08:00", "20:00"],
+  "window_hours": 48,
+  "topics": [
+    "Экономика",
+    "Политика",
+    "Технологии",
+    "Конфликт в Украине",
+    "Международная повестка",
+    "Конфликты",
+    "Разное"
+  ],
+  "channels": [
+    "bbcrussian",
+    "BIoomberg",
+    "Bloomberg4you",
+    "meduzalive",
+    "ForbesKaz",
+    "hinews_ru",
+    "syrymitkulov",
+    "kozachkow",
+    "tengrinews"
+  ]
+}
