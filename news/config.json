@@ -1,7 +1,7 @@
 {
   "timezone": "Asia/Dubai",
   "schedule": ["08:00", "20:00"],
-  "window_hours": 48,
+  "window_hours": 13,
   "topics": [
     "Экономика",
     "Политика",
